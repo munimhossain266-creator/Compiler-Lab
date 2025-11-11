@@ -1,0 +1,170 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <unordered_set>
+
+using namespace std;
+
+// Keyword list
+unordered_set<string> keywords = {
+    "int", "float", "double", "char", "return", "if", "else", "while",
+    "for", "break", "continue", "class", "public", "private", "void"
+};
+
+// Check keyword
+bool isKeyword(const string &word) {
+    return keywords.find(word) != keywords.end();
+}
+
+// Check operator
+bool isOperator(const string &word) {
+    return (word == "+" || word == "-" || word == "*" || word == "/" ||
+            word == "=" || word == "==" || word == "!=");
+}
+
+// Check number
+bool isNumber(const string &word) {
+    for (char ch : word) {
+        if (!isdigit(ch)) return false;
+    }
+    return !word.empty();
+}
+
+// Check punctuation
+bool isPunctuation(char ch) {
+    string p = "{}()[],;.";
+    return p.find(ch) != string::npos;
+}
+
+// Tokenize each line
+void tokenizeLine(const string &line, int lineNumber) {
+
+    cout << "Line " << lineNumber << ":" << endl;
+
+    string token;
+    vector<string> identifiers, keywords_list, operators, numbers, punctuations;
+
+    string current = "";
+
+    for (int i = 0; i < line.size(); i++) {
+        char ch = line[i];
+
+        // If punctuation → separate token
+        if (isPunctuation(ch)) {
+            if (!current.empty()) {
+                token = current;
+                current.clear();
+
+                if (isKeyword(token)) keywords_list.push_back(token);
+                else if (isOperator(token)) operators.push_back(token);
+                else if (isNumber(token)) numbers.push_back(token);
+                else identifiers.push_back(token);
+            }
+            punctuations.push_back(string(1, ch));
+        }
+
+        // If space → finalize token
+        else if (isspace(ch)) {
+            if (!current.empty()) {
+                token = current;
+                current.clear();
+
+                if (isKeyword(token)) keywords_list.push_back(token);
+                else if (isOperator(token)) operators.push_back(token);
+                else if (isNumber(token)) numbers.push_back(token);
+                else identifiers.push_back(token);
+            }
+        }
+
+        // Check operator (handles == , !=)
+        else if (ch == '=' || ch == '!' || ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+
+            // Flush previous token
+            if (!current.empty()) {
+                token = current;
+                current.clear();
+
+                if (isKeyword(token)) keywords_list.push_back(token);
+                else if (isNumber(token)) numbers.push_back(token);
+                else identifiers.push_back(token);
+            }
+
+            // Multi-character operator check
+            if (i + 1 < line.size() && 
+                (line[i + 1] == '=')) 
+            {
+                operators.push_back(string() + ch + line[i + 1]);
+                i++;
+            } else {
+                operators.push_back(string(1, ch));
+            }
+        }
+
+        else {
+            current += ch;
+        }
+    }
+
+    // Final leftover token
+    if (!current.empty()) {
+        token = current;
+        if (isKeyword(token)) keywords_list.push_back(token);
+        else if (isOperator(token)) operators.push_back(token);
+        else if (isNumber(token)) numbers.push_back(token);
+        else identifiers.push_back(token);
+    }
+
+    // Print results
+    if (!identifiers.empty()) {
+        cout << "Identifiers: ";
+        for (auto &t : identifiers) cout << t << " ";
+        cout << endl;
+    }
+
+    if (!keywords_list.empty()) {
+        cout << "Keywords: ";
+        for (auto &t : keywords_list) cout << t << " ";
+        cout << endl;
+    }
+
+    if (!operators.empty()) {
+        cout << "Operators: ";
+        for (auto &t : operators) cout << t << " ";
+        cout << endl;
+    }
+
+    if (!numbers.empty()) {
+        cout << "Numbers: ";
+        for (auto &t : numbers) cout << t << " ";
+        cout << endl;
+    }
+
+    if (!punctuations.empty()) {
+        cout << "Punctuation: ";
+        for (auto &t : punctuations) cout << t << " ";
+        cout << endl;
+    }
+
+    cout << endl;
+}
+
+int main() {
+    ifstream inputFile("newText.txt");
+
+    if (!inputFile) {
+        cout << "Unable to open the file!" << endl;
+        return 1;
+    }
+
+    string line;
+    int lineNumber = 1;
+
+    while (getline(inputFile, line)) {
+        tokenizeLine(line, lineNumber);
+        lineNumber++;
+    }
+
+    inputFile.close();
+    return 0;
+}
